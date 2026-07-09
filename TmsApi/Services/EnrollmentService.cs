@@ -23,6 +23,21 @@ public class EnrollmentService(
                 e.EnrolledAt))
             .FirstOrDefaultAsync(ct);
 
+    public async Task<IReadOnlyList<EnrollmentResponseDto>> GetByCourseAsync(
+        int courseId,
+        CancellationToken ct)
+    {
+        return await context.Enrollments
+            .AsNoTracking()
+            .Where(e => e.CourseId == courseId)
+            .Select(e => new EnrollmentResponseDto(
+                e.Id,
+                e.CourseId,
+                e.StudentId,
+                e.EnrolledAt))
+            .ToListAsync(ct);
+    }
+
     public async Task<EnrollmentResponseDto> CreateAsync(
         int courseId,
         EnrollStudentRequest request,
@@ -32,10 +47,12 @@ public class EnrollmentService(
             .FirstOrDefaultAsync(c => c.Id == courseId, ct);
 
         if (course == null)
-            throw new KeyNotFoundException($"Course {courseId} was not found.");
+            throw new KeyNotFoundException(
+                $"Course {courseId} was not found.");
 
         var alreadyEnrolled = await context.Enrollments
-            .AnyAsync(e => e.CourseId == courseId && e.StudentId == request.StudentId, ct);
+            .AnyAsync(e => e.CourseId == courseId
+                        && e.StudentId == request.StudentId, ct);
 
         if (alreadyEnrolled)
             throw new InvalidOperationException(
@@ -52,6 +69,7 @@ public class EnrollmentService(
         {
             CourseId   = courseId,
             StudentId  = request.StudentId,
+            Year       = DateTime.UtcNow.Year,
             EnrolledAt = DateTime.UtcNow
         };
 
