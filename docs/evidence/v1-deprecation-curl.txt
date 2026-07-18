@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Sat, 18 Jul 2026 08:27:34 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+X-Correlation-Id: 7d3b93b2
+api-supported-versions: 1.0, 2.0
+Deprecation: true
+Sunset: Thu, 31 Dec 2026 00:00:00 GMT
+Link: <http://localhost:5049/api/v2/courses>; rel="successor-version"
+
+{"items":[{"id":14,"code":"DAT-201","title":"Advanced SQL and Indexing","maxCapacity":26,"enrollmentCount":0},{"id":7,"code":"CSE-301","title":"Advanced Web API Patterns","maxCapacity":24,"enrollmentCount":0},{"id":9,"code":"CSE-303","title":"Angular Advanced","maxCapacity":24,"enrollmentCount":0},{"id":8,"code":"CSE-302","title":"Angular Fundamentals","maxCapacity":26,"enrollmentCount":0},{"id":22,"code":"AI-101","title":"Applied Machine Learning","maxCapacity":20,"enrollmentCount":0},{"id":4,"code":"CSE-201","title":"ASP.NET Core Fundamentals","maxCapacity":28,"enrollmentCount":0},{"id":29,"code":"TNS-450","title":"Bio chemistry","maxCapacity":20,"enrollmentCount":0},{"id":6,"code":"CSE-203","title":"Building RESTful Web APIs","maxCapacity":28,"enrollmentCount":0},{"id":17,"code":"ARC-201","title":"Cloud-Native Architecture","maxCapacity":22,"enrollmentCount":0},{"id":28,"code":"MSC-780","title":"cns","maxCapacity":10,"enrollmentCount":0},{"id":19,"code":"DEV-201","title":"Continuous Delivery Pipelines","maxCapacity":22,"enrollmentCount":0},{"id":21,"code":"MOB-201","title":"Cross-Platform Mobile","maxCapacity":22,"enrollmentCount":0},{"id":13,"code":"DAT-101","title":"Database Design Foundations","maxCapacity":30,"enrollmentCount":0},{"id":30,"code":"CSE-200","title":"Database Systems","maxCapacity":30,"enrollmentCount":0},{"id":15,"code":"DAT-202","title":"Data Modelling for the Web","maxCapacity":26,"enrollmentCount":0},{"id":25,"code":"UX-201","title":"Design Systems and Tokens","maxCapacity":22,"enrollmentCount":0},{"id":18,"code":"DEV-101","title":"DevOps Foundations","maxCapacity":24,"enrollmentCount":0},{"id":5,"code":"CSE-202","title":"Entity Framework Core and PostgreSQL","maxCapacity":28,"enrollmentCount":0},{"id":27,"code":"GFR-445","title":"fdfdfdf","maxCapacity":15,"enrollmentCount":1},{"id":31,"code":"FUL-001","title":"Full Course Test","maxCapacity":1,"enrollmentCount":1}],"totalCount":34,"page":1,"pageSize":20,"totalPages":2,"hasNext":true,"hasPrevious":false}

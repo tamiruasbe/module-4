@@ -9,6 +9,7 @@ using TmsApi.Api.Authentication;
 using TmsApi.Api.BackgroundServices;
 using TmsApi.Infrastructure.Persistence;
 using TmsApi.Domain.Entities;
+using Asp.Versioning;
 
 // using TmsApi.Filters.SomeFilter;
 
@@ -42,7 +43,19 @@ builder.Services.AddControllers(options =>
 });
 
 builder.Services.AddProblemDetails();
-builder.Services.AddOpenApi();
+// builder.Services.AddOpenApi();
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.ShouldInclude = description =>
+        description.GroupName == "v1";
+});
+
+
+builder.Services.AddOpenApi("v2", options =>
+{
+    options.ShouldInclude = description =>
+        description.GroupName == "v2";
+});
 
 
 // ═══════════════════════════════════════════════
@@ -64,6 +77,28 @@ builder.Host.UseDefaultServiceProvider(options =>
 });
 
 
+
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+
+    options.AssumeDefaultVersionWhenUnspecified = true;
+
+    options.ReportApiVersions = true;
+
+    // options.ApiVersionReader = new UrlSegmentApiVersionReader();
+    options.ApiVersionReader = ApiVersionReader.Combine(
+    new UrlSegmentApiVersionReader(),
+    new HeaderApiVersionReader("X-Api-Version")
+);
+
+})
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+
+    options.SubstituteApiVersionInUrl = true;
+});
 // ═══════════════════════════════════════════════
 // BUILD
 // ═══════════════════════════════════════════════
@@ -81,8 +116,19 @@ app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+   app.MapOpenApi("/openapi/{documentName}.json");
+   app.MapScalarApiReference(options =>
+{
+    options
+        .WithTitle("TMS API Reference")
+        .WithTheme(ScalarTheme.DeepSpace)
+        .WithDefaultHttpClient(
+            ScalarTarget.CSharp,
+            ScalarClient.HttpClient
+        )
+        .AddDocument("v1", "API Version 1.0")
+        .AddDocument("v2", "API Version 2.0");
+});
 }
 
 
@@ -96,7 +142,7 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
-
+app.UseMiddleware<V1DeprecationMiddleware>();
 // Controllers
 app.MapControllers();
 
