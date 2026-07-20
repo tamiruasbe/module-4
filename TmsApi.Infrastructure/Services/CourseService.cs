@@ -116,4 +116,16 @@ public class CourseService(
     // {
     //     return GetCoursesAsync(request, ct);
     // }
+
+
+    public async Task<Course?> GetByCodeAsync(
+    string courseCode,
+    CancellationToken ct)
+{
+    return await context.Courses
+        .Include(c => c.Enrollments)
+        .FirstOrDefaultAsync(
+            c => c.Code == courseCode,
+            ct);
+}
 }

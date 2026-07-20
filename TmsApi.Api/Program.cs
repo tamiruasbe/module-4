@@ -11,39 +11,43 @@ using TmsApi.Infrastructure.Persistence;
 using TmsApi.Domain.Entities;
 using Asp.Versioning;
 
+using MediatR;
+using FluentValidation;
+using TmsApi.Application.Behaviors;
+using TmsApi.Application.Enrollments.Commands;
+using TmsApi.Api.ExceptionHandlers;
+
+
 // using TmsApi.Filters.SomeFilter;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ═══════════════════════════════════════════════
-// AUTHENTICATION & AUTHORIZATION
-// ═══════════════════════════════════════════════
+
 builder.Services.AddAuthentication("Training")
     .AddScheme<AuthenticationSchemeOptions, TrainingAuthHandler>("Training", null);
 
 builder.Services.AddAuthorization();
 
 
-// ═══════════════════════════════════════════════
 // DATABASE
-// ═══════════════════════════════════════════════
+
 builder.Services.AddDbContext<TmsDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("TmsDatabase"))
            .LogTo(Console.WriteLine, LogLevel.Information));
-        //    .EnableSensitiveDataLogging());
+// .EnableSensitiveDataLogging());
 
 
-// ═══════════════════════════════════════════════
 // CORE SERVICES
-// ═══════════════════════════════════════════════
+
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<AuditLogFilter>();
 });
 
-builder.Services.AddProblemDetails();
+
 // builder.Services.AddOpenApi();
+
 builder.Services.AddOpenApi("v1", options =>
 {
     options.ShouldInclude = description =>
@@ -58,18 +62,50 @@ builder.Services.AddOpenApi("v2", options =>
 });
 
 
-// ═══════════════════════════════════════════════
+
 // APPLICATION SERVICES
-// ═══════════════════════════════════════════════
+
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
+
+
+// MediatR
+
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(EnrollStudentHandler).Assembly));
+
+
+// FluentValidation
+
+builder.Services.AddValidatorsFromAssembly(
+    typeof(EnrollStudentValidator).Assembly);
+
+
+// MediatR Pipeline Behaviors
+// LoggingBehavior FIRST — it must wrap ValidationBehavior
+
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(LoggingBehavior<,>));
+
+builder.Services.AddTransient(
+    typeof(IPipelineBehavior<,>),
+    typeof(ValidationBehavior<,>));
+
+
+// Global Exception Handling
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+builder.Services.AddProblemDetails();
+
 
 builder.Services.AddSingleton<EnrollmentWorker>();
 
 
-// ═══════════════════════════════════════════════
+
 // STRICT LIFETIME VALIDATION
-// ═══════════════════════════════════════════════
+
 builder.Host.UseDefaultServiceProvider(options =>
 {
     options.ValidateScopes = true;
@@ -77,6 +113,8 @@ builder.Host.UseDefaultServiceProvider(options =>
 });
 
 
+
+// API VERSIONING
 
 builder.Services.AddApiVersioning(options =>
 {
@@ -86,11 +124,10 @@ builder.Services.AddApiVersioning(options =>
 
     options.ReportApiVersions = true;
 
-    // options.ApiVersionReader = new UrlSegmentApiVersionReader();
     options.ApiVersionReader = ApiVersionReader.Combine(
-    new UrlSegmentApiVersionReader(),
-    new HeaderApiVersionReader("X-Api-Version")
-);
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader("X-Api-Version")
+    );
 
 })
 .AddApiExplorer(options =>
@@ -99,15 +136,14 @@ builder.Services.AddApiVersioning(options =>
 
     options.SubstituteApiVersionInUrl = true;
 });
-// ═══════════════════════════════════════════════
+
+
 // BUILD
-// ═══════════════════════════════════════════════
+
 var app = builder.Build();
 
 
-// ═══════════════════════════════════════════════
 // MIDDLEWARE PIPELINE
-// ═══════════════════════════════════════════════
 
 app.UseExceptionHandler();
 
@@ -116,19 +152,20 @@ app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {
-   app.MapOpenApi("/openapi/{documentName}.json");
-   app.MapScalarApiReference(options =>
-{
-    options
-        .WithTitle("TMS API Reference")
-        .WithTheme(ScalarTheme.DeepSpace)
-        .WithDefaultHttpClient(
-            ScalarTarget.CSharp,
-            ScalarClient.HttpClient
-        )
-        .AddDocument("v1", "API Version 1.0")
-        .AddDocument("v2", "API Version 2.0");
-});
+    app.MapOpenApi("/openapi/{documentName}.json");
+
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("TMS API Reference")
+            .WithTheme(ScalarTheme.DeepSpace)
+            .WithDefaultHttpClient(
+                ScalarTarget.CSharp,
+                ScalarClient.HttpClient
+            )
+            .AddDocument("v1", "API Version 1.0")
+            .AddDocument("v2", "API Version 2.0");
+    });
 }
 
 
@@ -143,13 +180,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseMiddleware<V1DeprecationMiddleware>();
+
+
 // Controllers
+
 app.MapControllers();
 
 
-// ═══════════════════════════════════════════════
+
 // DATABASE SEED
-// ═══════════════════════════════════════════════
 
 if (app.Environment.IsDevelopment())
 {
