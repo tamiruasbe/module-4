@@ -4,9 +4,12 @@ using TmsApi.Domain.Entities;
 using TmsApi.Application.DTOs;
 using TmsApi.Application.Interfaces;
 using Microsoft.Extensions.Logging;
+using TmsApi.Application.Features.Courses.Commands.UpdateCourse;
 
 // namespace TmsApi.Infrastructure.Services;
 namespace TmsApi.Infrastructure.Persistence;
+
+
 
 public class CourseService(
     TmsDbContext context,
@@ -116,7 +119,12 @@ public class CourseService(
     // {
     //     return GetCoursesAsync(request, ct);
     // }
-
+public async Task<List<Course>> GetAllAsync(CancellationToken ct)
+{
+    return await context.Courses
+        .Include(c => c.Enrollments)
+        .ToListAsync(ct);
+}
 
     public async Task<Course?> GetByCodeAsync(
     string courseCode,
@@ -128,4 +136,64 @@ public class CourseService(
             c => c.Code == courseCode,
             ct);
 }
+
+public async Task<bool> UpdateAsync(
+    UpdateCourseCommand command,
+    CancellationToken ct)
+{
+    var course = await context.Courses
+        .FirstOrDefaultAsync(
+            c => c.Id == command.Id,
+            ct);
+
+    if (course == null)
+        return false;
+
+
+    course.Code = command.Code;
+    course.Title = command.Title;
+    course.MaxCapacity = command.MaxCapacity;
+
+
+    await context.SaveChangesAsync(ct);
+
+    logger.LogInformation(
+        "Updated course {CourseId}",
+        course.Id);
+
+    return true;
+}
+
+public async Task<bool> DeleteAsync(
+    int id,
+    CancellationToken ct)
+{
+    var course = await context.Courses
+        .FirstOrDefaultAsync(
+            c => c.Id == id,
+            ct);
+
+
+    if (course == null)
+        return false;
+
+
+    context.Courses.Remove(course);
+
+
+    await context.SaveChangesAsync(ct);
+
+
+    logger.LogInformation(
+        "Deleted course {CourseId}",
+        id);
+
+
+    return true;
+}
+
+    public Task<IEnumerable<CourseResponseDto>> SearchAsync(string? term, CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
 }

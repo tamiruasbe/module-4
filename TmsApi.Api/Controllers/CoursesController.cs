@@ -1,10 +1,8 @@
 
-
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using TmsApi.Application.DTOs;
-
+using Microsoft.AspNetCore.RateLimiting;
 using TmsApi.Application.Interfaces;
 
 namespace TmsApi.Api.Controllers;
@@ -15,6 +13,7 @@ namespace TmsApi.Api.Controllers;
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
 public class CoursesController(
+    ICachedCourseService cachedCourseService,
     ICourseService courseService,
     LinkGenerator linkGenerator) : ControllerBase
 {
@@ -30,12 +29,13 @@ public class CoursesController(
         "Use search to filter by title or code. " +
         "Use orderBy (Title, Code, MaxCapacity) and descending to sort.")]
     public async Task<IActionResult> GetCourses(
-        [FromQuery] PagedRequest request,
-        CancellationToken ct)
-    {
-        var result = await courseService.GetCoursesAsync(request, ct);
-        return Ok(result);
-    }
+    [FromQuery] PagedRequest request,
+    CancellationToken ct)
+{
+    var result = await cachedCourseService.GetAllCoursesAsync(ct);
+
+    return Ok(result);
+}
 
     // ════════════════════════════════════════
     // GET /api/courses/{id}
@@ -110,8 +110,10 @@ public class CoursesController(
         "Returns 409 if the course code already exists. " +
         "Returns 400 if validation fails.")]
     public async Task<IActionResult> CreateCourse(
+        
         CreateCourseRequest request,
         CancellationToken ct)
+        
     {
         if (await courseService.CodeExistsAsync(request.Code, ct))
             return Conflict(new ProblemDetails
@@ -122,10 +124,27 @@ public class CoursesController(
             });
 
         var result = await courseService.CreateAsync(request, ct);
-
+        await cachedCourseService.InvalidateCourseCacheAsync(ct); 
         return CreatedAtAction(
             nameof(GetCourseById),
             new { id = result.Id },
             result);
     }
+
+    // ════════════════════════════════════════
+// GET /api/courses/search
+// ════════════════════════════════════════
+[HttpGet("search")]
+[EnableRateLimiting("search")]
+[EndpointSummary("Search courses")]
+[EndpointDescription(
+    "Searches courses by title or code using the search-only rate limit policy.")]
+public async Task<IActionResult> SearchCourses(
+    [FromQuery] string? term,
+    CancellationToken ct)
+{
+    var results = await courseService.SearchAsync(term, ct);
+
+    return Ok(results);
+}
 }
