@@ -1,15 +1,18 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using TmsApi.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using TmsApi.Infrastructure.Persistence;
-
+using TmsApi.Application.DTOs;
 namespace TmsApi.Controllers.V2;
 
 
 [ApiController]
 [Route("api/v{version:apiVersion}/courses")]
 [ApiVersion("2.0")]
-public class CoursesController(TmsDbContext context) : ControllerBase
+public class CoursesController(
+    ICachedCourseService cachedCourseService,
+    TmsDbContext context) : ControllerBase
 {
 
     [HttpGet]
@@ -24,32 +27,28 @@ public class CoursesController(TmsDbContext context) : ControllerBase
         pageSize = Math.Clamp(pageSize, 1, 50);
 
 
-        var baseQuery = context.Courses
-            .AsNoTracking();
+
+        var rows = await cachedCourseService
+            .GetAllCoursesAsync(ct);
 
 
-        var totalCount = await baseQuery
-            .CountAsync(ct);
+
+        var totalCount = rows.Count;
 
 
-        var rows = await baseQuery
+
+        var data = rows
             .OrderBy(c => c.Title)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new
-            {
-                c.Id,
-                c.Title,
-                c.Code,
-                c.MaxCapacity,
-                EnrollmentCount = c.Enrollments.Count
-            })
-            .ToListAsync(ct);
+            .ToList();
 
 
 
         var totalPages =
-            (int)Math.Ceiling(totalCount / (double)pageSize);
+            (int)Math.Ceiling(
+                totalCount / (double)pageSize);
+
 
 
         var hasNext = page < totalPages;
@@ -60,7 +59,7 @@ public class CoursesController(TmsDbContext context) : ControllerBase
 
         return Ok(new
         {
-            data = rows,
+            data,
 
             meta = new
             {
@@ -92,4 +91,31 @@ public class CoursesController(TmsDbContext context) : ControllerBase
             }
         });
     }
+
+    [HttpPut("{id:int}")]
+public async Task<IActionResult> UpdateCourse(
+    int id,
+    [FromBody] UpdateCourseRequest request,
+    CancellationToken ct)
+{
+    var course = await context.Courses
+        .FirstOrDefaultAsync(c => c.Id == id, ct);
+
+    if (course is null)
+        return NotFound();
+
+    course.Title = request.Title;
+
+    await context.SaveChangesAsync(ct);
+
+    // IMPORTANT: invalidate the cache after the write succeeds
+    await cachedCourseService.InvalidateCourseCacheAsync(ct);
+
+    return Ok(new
+    {
+        message = "Course updated",
+        id = course.Id,
+        title = course.Title
+    });
+}
 }
