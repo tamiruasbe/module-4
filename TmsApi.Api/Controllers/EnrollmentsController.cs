@@ -11,6 +11,43 @@ namespace TmsApi.Api.Controllers;
 [ApiVersion("2.0")]
 public class EnrollmentsController(IMediator mediator) : ControllerBase
 {
+     [HttpGet]
+    public IActionResult GetAll()
+    {
+        var enrollments = new List<object>
+        {
+            new
+            {
+                id = "1",
+                studentId = 1001,
+                studentName = "Liya Kebede",
+                courseId = 1,
+                courseName = "Advanced Java Services",
+                status = "Pending",
+                enrolledAt = DateTime.UtcNow
+            },
+            new
+            {
+                id = "2",
+                studentId = 1002,
+                studentName = "Abel Bekele",
+                courseId = 2,
+                courseName = "Cloud Computing",
+                status = "Approved",
+                enrolledAt = DateTime.UtcNow
+            }
+        };
+
+        return Ok(enrollments);
+    }
+
+    [HttpPost("{id}/approve")]
+    public IActionResult Approve(string id)
+    {
+        Console.WriteLine($"Enrollment {id} approved.");
+        return NoContent();
+    }
+
     [HttpPost]
     public async Task<IActionResult> Enroll(
         EnrollStudentCommand command,
