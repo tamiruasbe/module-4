@@ -119,4 +119,12 @@ public async Task<List<Enrollment>> GetByStudentIdAsync(
         .Where(e => e.StudentId == studentId)
         .ToListAsync(ct);
 }
+public async Task<List<Enrollment>> GetAllAsync(
+    CancellationToken ct)
+{
+    return await context.Enrollments
+        .Include(e => e.Student)
+        .Include(e => e.Course)
+        .ToListAsync(ct);
+}
 }
