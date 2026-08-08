@@ -21,8 +21,13 @@ using Microsoft.Extensions.Caching.Hybrid;
 using TmsApi.Infrastructure.Services;
 using TmsApi.Application.Features.Courses.Queries.GetCourses;
 using TmsApi.Application.Features.Courses.Commands.CreateCourse;
-
-
+using System.Threading.Channels;
+using TmsApi.Application.Transcripts;
+using TmsApi.Infrastructure.Transcripts;
+using TmsApi.Infrastructure.Workers;
+using TmsApi.Api.Hubs;
+using TmsApi.Application.Notifications;
+using TmsApi.Api.Notifications;
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -56,7 +61,7 @@ builder.Services.AddControllers(options =>
 {
     options.Filters.Add<AuditLogFilter>();
 });
-
+builder.Services.AddSignalR();
 
 // =============================
 // OPEN API / SCALAR
@@ -148,6 +153,10 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 
 builder.Services.AddScoped<ICachedCourseService, CachedCourseService>();
+builder.Services.AddSingleton<ITranscriptStatusStore, InMemoryTranscriptStatusStore>();
+builder.Services.AddSingleton<
+    ITranscriptNotificationService,
+    SignalRTranscriptNotificationService>();
 
 
 // =============================
@@ -331,6 +340,13 @@ builder.Services.AddProblemDetails();
 // =============================
 
 builder.Services.AddSingleton<EnrollmentWorker>();
+builder.Services.AddHostedService<TranscriptWorker>();
+builder.Services.AddSingleton(
+    Channel.CreateBounded<TranscriptRequest>(
+        new BoundedChannelOptions(100)
+        {
+            FullMode = BoundedChannelFullMode.Wait
+        }));
 
 
 // =============================
@@ -464,7 +480,7 @@ app.UseMiddleware<V1DeprecationMiddleware>();
 
 app.MapControllers();
 
-
+app.MapHub<TmsHub>("/hubs/tms");
 
 // =============================
 // DATABASE SEED
