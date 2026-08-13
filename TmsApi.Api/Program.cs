@@ -85,16 +85,16 @@ builder.Services.AddOpenApi("v2", options =>
 // CORS FOR ANGULAR
 // =============================
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAngular", policy =>
-    {
-        policy
-            .WithOrigins("http://localhost:4200")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy("AllowAngular", policy =>
+//     {
+//         policy
+//             .WithOrigins("http://localhost:4200")
+//             .AllowAnyHeader()
+//             .AllowAnyMethod();
+//     });
+// });
 
 
 // =============================
@@ -399,7 +399,22 @@ builder.Services.AddApiVersioning(options =>
 });
 
 
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins")
+    .Get<string[]>()
+    ?? ["http://localhost:4200"];
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("TmsClient", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+    });
+});
 // =============================
 // BUILD APP
 // =============================
@@ -459,10 +474,11 @@ app.UseHttpsRedirection();
 
 
 app.UseRouting();
-
+app.UseCors("TmsClient");
 
 // IMPORTANT FOR ANGULAR
-app.UseCors("AllowAngular");
+// app.UseCors("AllowAngular");
+
 
 
 app.UseRateLimiter();

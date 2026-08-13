@@ -78,7 +78,8 @@ using TmsApi.Api.Hubs;
 using TmsApi.Application.Enrollments.Commands;
 using TmsApi.Application.Enrollments.Queries;
 using TmsApi.Application.Hubs;
-
+using TmsApi.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 namespace TmsApi.Api.Controllers;
 
 [ApiController]
@@ -86,7 +87,8 @@ namespace TmsApi.Api.Controllers;
 [ApiVersion("2.0")]
 public class EnrollmentsController(
     IMediator mediator,
-    IHubContext<TmsHub, ITmsHubClient> hubContext
+    IHubContext<TmsHub, ITmsHubClient> hubContext,
+    TmsDbContext context
 ) : ControllerBase
 {
     [HttpGet]
@@ -146,4 +148,43 @@ public class EnrollmentsController(
 
         return Ok(schedule);
     }
+
+    [HttpPost("{id}/approve")]
+public async Task<IActionResult> Approve(
+    int id,
+    CancellationToken ct)
+{
+    var enrollment = await context.Enrollments
+        .FirstOrDefaultAsync(e => e.Id == id, ct);
+
+    if (enrollment is null)
+    {
+        return NotFound(new
+        {
+            message = $"Enrollment {id} was not found."
+        });
+    }
+
+    if (enrollment.Status == "Approved")
+    {
+        return Ok(new
+        {
+            id = enrollment.Id,
+            status = enrollment.Status,
+            message = "Enrollment is already approved."
+        });
+    }
+
+    enrollment.Status = "Approved";
+
+    await context.SaveChangesAsync(ct);
+
+    return Ok(new
+    {
+        id = enrollment.Id,
+        studentId = enrollment.StudentId,
+        courseId = enrollment.CourseId,
+        status = enrollment.Status
+    });
+}
 }
