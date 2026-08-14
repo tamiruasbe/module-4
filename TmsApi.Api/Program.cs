@@ -519,7 +519,9 @@ app.UseMiddleware<V1DeprecationMiddleware>();
 
 app.MapControllers();
 
-app.MapHub<TmsHub>("/hubs/tms");
+// app.MapHub<TmsHub>("/hubs/tms");
+app.MapHub<TmsHub>("/hubs/tms")
+   .RequireCors("TmsClient");
 
 // =============================
 // DATABASE SEED
