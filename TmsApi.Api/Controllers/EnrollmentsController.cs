@@ -149,7 +149,45 @@ public class EnrollmentsController(
         return Ok(schedule);
     }
 
-    [HttpPost("{id}/approve")]
+//     [HttpPost("{id}/approve")]
+// public async Task<IActionResult> Approve(
+//     int id,
+//     CancellationToken ct)
+// {
+//     var enrollment = await context.Enrollments
+//         .FirstOrDefaultAsync(e => e.Id == id, ct);
+
+//     if (enrollment is null)
+//     {
+//         return NotFound(new
+//         {
+//             message = $"Enrollment {id} was not found."
+//         });
+//     }
+
+//     if (enrollment.Status == "Approved")
+//     {
+//         return Ok(new
+//         {
+//             id = enrollment.Id,
+//             status = enrollment.Status,
+//             message = "Enrollment is already approved."
+//         });
+//     }
+
+//     enrollment.Status = "Approved";
+
+//     await context.SaveChangesAsync(ct);
+
+//     return Ok(new
+//     {
+//         id = enrollment.Id,
+//         studentId = enrollment.StudentId,
+//         courseId = enrollment.CourseId,
+//         status = enrollment.Status
+//     });
+// }
+[HttpPost("{id}/approve")]
 public async Task<IActionResult> Approve(
     int id,
     CancellationToken ct)
@@ -175,10 +213,18 @@ public async Task<IActionResult> Approve(
         });
     }
 
+    // 1. Update database
     enrollment.Status = "Approved";
 
     await context.SaveChangesAsync(ct);
 
+    // 2. Send update to ALL connected Angular clients
+    await hubContext.Clients.All.ReceiveEnrollmentStatusUpdated(
+        enrollment.Id.ToString(),
+        enrollment.Status
+    );
+
+    // 3. Return HTTP response
     return Ok(new
     {
         id = enrollment.Id,

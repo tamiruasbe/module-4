@@ -15,7 +15,7 @@ public class EnrollStudentValidator : AbstractValidator<EnrollStudentCommand>
             .WithMessage("Course code is required.");
 
         RuleFor(x => x.CourseCode)
-            .Matches(@"^[A-Z]{3}-\d{3}$")
+            .Matches(@"^[A-Z]{2,3}-\d{3}$")
             .WithMessage("Course code must follow the format XXX-000 (e.g., CSE-101).");
     }
 }
