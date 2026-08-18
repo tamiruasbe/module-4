@@ -36,4 +36,6 @@ Task<IEnumerable<CourseResponseDto>> SearchAsync(
 Task<bool> DeleteAsync(
     int id,
     CancellationToken ct);
+
+   
 }

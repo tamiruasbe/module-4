@@ -147,4 +147,57 @@ public async Task<IActionResult> SearchCourses(
 
     return Ok(results);
 }
+// ════════════════════════════════════════
+// DELETE /api/courses/{id}
+// ════════════════════════════════════════
+[HttpDelete("{id:int}")]
+[ProducesResponseType(StatusCodes.Status204NoContent)]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+public async Task<IActionResult> DeleteCourse(
+    int id,
+    CancellationToken ct)
+{
+    // Check whether the course exists
+    var course = await courseService.GetByIdAsync(id, ct);
+
+    if (course is null)
+    {
+        return NotFound(new ProblemDetails
+        {
+            Title = "Course not found",
+            Detail = $"Course with ID {id} does not exist.",
+            Status = StatusCodes.Status404NotFound
+        });
+    }
+
+    // IMPORTANT:
+    // If students are enrolled, reject deletion.
+    if (course.EnrollmentCount > 0)
+    {
+        return Conflict(new ProblemDetails
+        {
+            Title = "Cannot delete course",
+            Detail = "Cannot delete course because active student enrollments exist.",
+            Status = StatusCodes.Status409Conflict
+        });
+    }
+
+    var deleted = await courseService.DeleteAsync(id, ct);
+
+    if (!deleted)
+    {
+        return NotFound(new ProblemDetails
+        {
+            Title = "Course not found",
+            Detail = $"Course with ID {id} does not exist.",
+            Status = StatusCodes.Status404NotFound
+        });
+    }
+
+    await cachedCourseService.InvalidateCourseCacheAsync(ct);
+
+    return NoContent();
+}
+
 }

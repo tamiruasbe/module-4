@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Identity;
+using TmsApi.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -422,6 +424,38 @@ builder.Services.AddCors(options =>
             .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
     });
 });
+
+
+
+builder.Services
+    .AddIdentityCore<TmsUser>(options =>
+    {
+        // =====================================
+        // ENTERPRISE PASSWORD POLICY
+        // =====================================
+
+        options.Password.RequiredLength = 12;
+
+        options.Password.RequireUppercase = true;
+
+        options.Password.RequireDigit = true;
+
+        options.Password.RequireNonAlphanumeric = true;
+
+
+        // =====================================
+        // BRUTE-FORCE LOCKOUT PROTECTION
+        // =====================================
+
+        options.Lockout.MaxFailedAccessAttempts = 5;
+
+        options.Lockout.DefaultLockoutTimeSpan =
+            TimeSpan.FromMinutes(15);
+
+        options.Lockout.AllowedForNewUsers = true;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<TmsDbContext>();
 // =============================
 // BUILD APP
 // =============================
@@ -542,7 +576,5 @@ if(app.Environment.IsDevelopment())
     await DataSeeder.SeedAsync(context);
 
 }
-
-
 
 app.Run();

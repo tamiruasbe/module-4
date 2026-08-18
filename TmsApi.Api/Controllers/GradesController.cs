@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TmsApi.Infrastructure.Persistence;
@@ -5,7 +6,9 @@ using TmsApi.Infrastructure.Persistence;
 namespace TmsApi.Api.Controllers;
 
 [ApiController]
-[Route("api/grades")]
+// [Route("api/grades")]
+[Route("api/v{version:apiVersion}/grades")]
+[ApiVersion("1.0")]
 public class GradesController : ControllerBase
 {
     private readonly TmsDbContext _context;

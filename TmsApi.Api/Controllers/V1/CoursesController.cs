@@ -61,4 +61,43 @@ public class CoursesController(TmsDbContext context) : ControllerBase
             hasPrevious = page > 1
         });
     }
+
+    [HttpDelete("{id:int}")]
+public async Task<IActionResult> DeleteCourse(
+    int id,
+    CancellationToken ct)
+{
+    var course = await context.Courses
+        .Include(c => c.Enrollments)
+        .FirstOrDefaultAsync(c => c.Id == id, ct);
+
+    // Course does not exist
+    if (course is null)
+    {
+        return NotFound(new ProblemDetails
+        {
+            Title = "Course not found",
+            Detail = $"Course with ID {id} was not found.",
+            Status = StatusCodes.Status404NotFound
+        });
+    }
+
+    // Course has active enrollments
+    if (course.Enrollments.Any())
+    {
+        return Conflict(new ProblemDetails
+        {
+            Title = "Cannot delete course",
+            Detail = "Cannot delete course because active student enrollments exist.",
+            Status = StatusCodes.Status409Conflict
+        });
+    }
+
+    // No enrollments, so delete is allowed
+    context.Courses.Remove(course);
+
+    await context.SaveChangesAsync(ct);
+
+    return NoContent();
+}
 }
