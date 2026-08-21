@@ -1,4 +1,5 @@
 
+using Asp.Versioning;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using TmsApi.Infrastructure.Identity;
@@ -6,7 +7,9 @@ using TmsApi.Infrastructure.Identity;
 namespace TmsApi.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+// [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/auth")]
+[ApiVersion("1.0")]
 public class AuthController : ControllerBase
 {
     private readonly UserManager<TmsUser> _userManager;
@@ -21,10 +24,6 @@ public class AuthController : ControllerBase
         _roleManager = roleManager;
     }
 
-
-    // ==========================================
-    // REGISTER
-    // ==========================================
 
     public record RegisterRequest(
         string Email,
@@ -104,9 +103,7 @@ public class AuthController : ControllerBase
     }
 
 
-    // ==========================================
-    // LOGIN
-    // ==========================================
+   
 
     public record LoginRequest(
         string Email,
