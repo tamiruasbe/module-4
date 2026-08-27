@@ -34,6 +34,10 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Tms.Api.Authorization;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +57,32 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<TokenService>();
 
+
+// .AddJwtBearer(options =>
+// {
+//     options.TokenValidationParameters =
+//         new TokenValidationParameters
+//         {
+//             ValidateIssuer = true,
+//             ValidateAudience = true,
+//             ValidateLifetime = true,
+//             ValidateIssuerSigningKey = true,
+
+//             ValidIssuer =
+//                 builder.Configuration["Jwt:Issuer"],
+
+//             ValidAudience =
+//                 builder.Configuration["Jwt:Audience"],
+
+//             IssuerSigningKey =
+//                 new SymmetricSecurityKey(
+//                     Encoding.UTF8.GetBytes(
+//                         builder.Configuration["Jwt:Key"]!
+//                     )
+//                 )
+//                 // RoleClaimType = ClaimTypes.Role 
+//         };
+// });
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme =
@@ -82,11 +112,21 @@ builder.Services.AddAuthentication(options =>
                     Encoding.UTF8.GetBytes(
                         builder.Configuration["Jwt:Key"]!
                     )
-                )
+                ),
+
+            RoleClaimType = ClaimTypes.Role
         };
 });
+// builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("CanEditCourse", policy =>
+        policy.Requirements.Add(
+            new CourseInstructorRequirement()));
 
-builder.Services.AddAuthorization();
+builder.Services.AddSingleton< IAuthorizationHandler,  
+ CourseInstructorHandler>();
+
+// builder.Services.AddSingleton<CourseInstructorHandler>();
 
 
 builder.Services.AddAntiforgery(options =>
@@ -234,21 +274,90 @@ builder.Services.AddHybridCache(options =>
 
 builder.Services.AddRateLimiter(options =>
 {
+    options.AddFixedWindowLimiter("AuthLimiter", opt =>
+{
+    opt.PermitLimit = 5;
+    opt.Window = TimeSpan.FromMinutes(1);
+    opt.QueueLimit = 0;
+});
 
-    options.GlobalLimiter =
-        PartitionedRateLimiter.Create<HttpContext, string>(
-            httpContext =>
+    // options.GlobalLimiter =
+    //     PartitionedRateLimiter.Create<HttpContext, string>(
+    //         httpContext =>
+    //         {
+
+    //             var (partitionKey, tier) =
+    //                 ApiKeyResolver.Resolve(httpContext);
+
+
+    //             return tier switch
+    //             {
+
+    //                 ApiKeyTier.Paid =>
+
+    //                 RateLimitPartition.GetTokenBucketLimiter(
+    //                     $"paid:{partitionKey}",
+    //                     _ => new TokenBucketRateLimiterOptions
+    //                     {
+    //                         TokenLimit = 200,
+    //                         TokensPerPeriod = 100,
+    //                         ReplenishmentPeriod =
+    //                             TimeSpan.FromSeconds(10),
+    //                         QueueLimit = 0,
+    //                         AutoReplenishment = true
+    //                     }),
+
+
+    //                 ApiKeyTier.Free =>
+
+    //                 RateLimitPartition.GetTokenBucketLimiter(
+    //                     $"free:{partitionKey}",
+    //                     _ => new TokenBucketRateLimiterOptions
+    //                     {
+    //                         TokenLimit = 30,
+    //                         TokensPerPeriod = 10,
+    //                         ReplenishmentPeriod =
+    //                             TimeSpan.FromSeconds(10),
+    //                         QueueLimit = 0,
+    //                         AutoReplenishment = true
+    //                     }),
+
+
+    //                 _ =>
+
+    //                 RateLimitPartition.GetTokenBucketLimiter(
+    //                     $"anon:{partitionKey}",
+    //                     _ => new TokenBucketRateLimiterOptions
+    //                     {
+    //                         TokenLimit = 10,
+    //                         TokensPerPeriod = 5,
+    //                         ReplenishmentPeriod =
+    //                             TimeSpan.FromSeconds(10),
+    //                         QueueLimit = 0,
+    //                         AutoReplenishment = true
+    //                     })
+
+    //             };
+    //         });
+options.GlobalLimiter =
+    PartitionedRateLimiter.Create<HttpContext, string>(
+        httpContext =>
+        {
+            // Exclude login from the global 10-second limiter.
+            // Login has its own AuthLimiter: 5 requests / minute.
+            if (httpContext.Request.Path.StartsWithSegments(
+                "/api/v1/auth/login"))
             {
+                return RateLimitPartition.GetNoLimiter<string>(
+                    "login-excluded");
+            }
 
-                var (partitionKey, tier) =
-                    ApiKeyResolver.Resolve(httpContext);
+            var (partitionKey, tier) =
+                ApiKeyResolver.Resolve(httpContext);
 
-
-                return tier switch
-                {
-
-                    ApiKeyTier.Paid =>
-
+            return tier switch
+            {
+                ApiKeyTier.Paid =>
                     RateLimitPartition.GetTokenBucketLimiter(
                         $"paid:{partitionKey}",
                         _ => new TokenBucketRateLimiterOptions
@@ -261,9 +370,7 @@ builder.Services.AddRateLimiter(options =>
                             AutoReplenishment = true
                         }),
 
-
-                    ApiKeyTier.Free =>
-
+                ApiKeyTier.Free =>
                     RateLimitPartition.GetTokenBucketLimiter(
                         $"free:{partitionKey}",
                         _ => new TokenBucketRateLimiterOptions
@@ -276,9 +383,7 @@ builder.Services.AddRateLimiter(options =>
                             AutoReplenishment = true
                         }),
 
-
-                    _ =>
-
+                _ =>
                     RateLimitPartition.GetTokenBucketLimiter(
                         $"anon:{partitionKey}",
                         _ => new TokenBucketRateLimiterOptions
@@ -290,10 +395,8 @@ builder.Services.AddRateLimiter(options =>
                             QueueLimit = 0,
                             AutoReplenishment = true
                         })
-
-                };
-            });
-
+            };
+        });
 
 
     options.RejectionStatusCode =
@@ -506,6 +609,65 @@ builder.Services
 var app = builder.Build();
 
 
+// SECURITY RESPONSE HEADERS
+// =============================
+
+// app.Use(async (context, next) =>
+// {
+//     context.Response.Headers.Append(
+//         "X-Content-Type-Options",
+//         "nosniff");
+
+//     context.Response.Headers.Append(
+//         "X-Frame-Options",
+//         "DENY");
+
+//     context.Response.Headers.Append(
+//         "Referrer-Policy",
+//         "strict-origin-when-cross-origin");
+
+//     context.Response.Headers.Append(
+//         "Content-Security-Policy",
+//         "default-src 'self'; " +
+//         "script-src 'self'; " +
+//         "style-src 'self' 'unsafe-inline';");
+
+//     await next();
+// });
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append(
+        "X-Content-Type-Options",
+        "nosniff");
+
+    context.Response.Headers.Append(
+        "X-Frame-Options",
+        "DENY");
+
+    context.Response.Headers.Append(
+        "Referrer-Policy",
+        "strict-origin-when-cross-origin");
+
+    if (app.Environment.IsDevelopment())
+    {
+        // Scalar requires inline JavaScript during development.
+        context.Response.Headers.Append(
+            "Content-Security-Policy",
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline'; " +
+            "style-src 'self' 'unsafe-inline';");
+    }
+    else
+    {
+        context.Response.Headers.Append(
+            "Content-Security-Policy",
+            "default-src 'self'; " +
+            "script-src 'self'; " +
+            "style-src 'self';");
+    }
+
+    await next();
+});
 
 // =============================
 // MIDDLEWARE PIPELINE

@@ -1,4 +1,4 @@
-
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -108,8 +108,8 @@ public class AuthController : ControllerBase
             message = "Registration successful."
         });
     }
-
-
+   public record LoginRequest(string Email, string Password);
+      [EnableRateLimiting("AuthLimiter")]
     [HttpPost("login")]
     public async Task<IActionResult> Login(
         [FromBody] LoginRequest request)
