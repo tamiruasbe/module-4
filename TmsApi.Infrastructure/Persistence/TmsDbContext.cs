@@ -22,19 +22,21 @@ public DbSet<RefreshToken> RefreshTokens { get; set; }
 
 protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
-    // IMPORTANT: Configure ASP.NET Core Identity tables first
     base.OnModelCreating(modelBuilder);
 
-    // Configure your existing entity configurations
+    modelBuilder.Entity<Course>()
+        .HasOne<TmsUser>()
+        .WithMany(u => u.Courses)
+        .HasForeignKey(c => c.InstructorId)
+        .OnDelete(DeleteBehavior.SetNull);
+
     modelBuilder.ApplyConfigurationsFromAssembly(
         typeof(TmsDbContext).Assembly
     );
 
-    // Existing global query filter
     modelBuilder.Entity<Enrollment>()
         .HasQueryFilter(e => !e.IsArchived);
 }
-
 public override async Task<int> SaveChangesAsync(
     CancellationToken cancellationToken = default)
 {

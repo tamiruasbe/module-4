@@ -9,4 +9,5 @@ public class TmsUser : IdentityUser
     public string LastName { get; set; } = string.Empty;
 
     public string? Department { get; set; }
+    public ICollection<Course> Courses { get; set; } = new List<Course>();
 }

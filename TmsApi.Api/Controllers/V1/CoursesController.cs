@@ -3,9 +3,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TmsApi.Application.DTOs;
 using TmsApi.Application.Features.Courses.Commands.UpdateCourse;
 using TmsApi.Infrastructure.Persistence;
-
+using TmsApi.Application.Features.Courses.Commands.CreateCourse;
 namespace TmsApi.Controllers.V1;
 
 [ApiController]
@@ -77,15 +78,43 @@ public class CoursesController : ControllerBase
             hasPrevious = page > 1
         });
     }
+ 
 
+[HttpGet("{id:int}")]
+public async Task<IActionResult> GetCourseById(
+    int id,
+    CancellationToken ct)
+{
+    var course = await _context.Courses
+        .AsNoTracking()
+        .Where(c => c.Id == id)
+        .Select(c => new
+        {
+            c.Id,
+            c.Code,
+            c.Title,
+            c.MaxCapacity,
+            EnrollmentCount = c.Enrollments.Count
+        })
+        .FirstOrDefaultAsync(ct);
 
-    // ============================================================
+    if (course is null)
+    {
+        return NotFound(new ProblemDetails
+        {
+            Title = "Course not found",
+            Detail = $"Course with ID {id} was not found.",
+            Status = StatusCodes.Status404NotFound
+        });
+    }
+
+    return Ok(course);
+}
+
     // PUT /api/v1/courses/{id}
     //
     // Module 11 Session 3
     // Exercise 5 - Resource-Based Authorization
-    // ============================================================
-
     [Authorize(Roles = "Instructor,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateCourse(
@@ -115,22 +144,7 @@ public class CoursesController : ControllerBase
         }
 
 
-        // --------------------------------------------------------
-        // Step 2: Resource-based authorization
-        //
-        // CourseInstructorHandler receives:
-        //
-        // User  -> currently logged-in user
-        // course -> course being modified
-        //
-        // Admin:
-        //     allowed
-        //
-        // Instructor:
-        //     allowed only when
-        //     course.InstructorId == User.Id
-        // --------------------------------------------------------
-
+        
         var authResult =
             await _authorizationService.AuthorizeAsync(
                 User,
@@ -200,7 +214,7 @@ public class CoursesController : ControllerBase
     //
     // Existing endpoint
     // ============================================================
-
+[Authorize(Roles = "Instructor,Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteCourse(
         int id,
@@ -246,4 +260,41 @@ public class CoursesController : ControllerBase
 
         return NoContent();
     }
+   [Authorize(Roles = "Admin")]
+[HttpPost]
+[ProducesResponseType(
+    typeof(CourseResponseDto),
+    StatusCodes.Status201Created)] 
+[HttpPost]
+[ProducesResponseType(
+    typeof(CourseResponseDto),
+    StatusCodes.Status201Created)]
+[ProducesResponseType(
+    typeof(ValidationProblemDetails),
+    StatusCodes.Status400BadRequest)]
+[ProducesResponseType(
+    typeof(ProblemDetails),
+    StatusCodes.Status409Conflict)]
+[EndpointSummary("Create a new course")]
+[EndpointDescription(
+    "Creates a course with a unique code. " +
+    "Code must follow the pattern XXX-000 (e.g. CSE-101). " +
+    "Returns 409 if the course code already exists. " +
+    "Returns 400 if validation fails.")]
+public async Task<IActionResult> CreateCourse(
+    CreateCourseRequest request,
+    CancellationToken ct)
+{
+    var result = await _mediator.Send(
+        new CreateCourseCommand(request),
+        ct);
+
+    return CreatedAtAction(
+        nameof(GetCourseById),
+        new { id = result.Id },
+        result);
+}
+
+
+
 }

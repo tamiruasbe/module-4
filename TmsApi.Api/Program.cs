@@ -243,6 +243,7 @@ builder.Services.AddTransient(
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IInstructorService, InstructorService>();
 
 builder.Services.AddScoped<ICachedCourseService, CachedCourseService>();
 builder.Services.AddSingleton<ITranscriptStatusStore, InMemoryTranscriptStatusStore>();
