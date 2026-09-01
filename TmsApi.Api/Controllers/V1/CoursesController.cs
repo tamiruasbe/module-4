@@ -59,6 +59,7 @@ public class CoursesController : ControllerBase
                 c.Code,
                 c.Title,
                 c.MaxCapacity,
+                  c.InstructorId,
                 EnrollmentCount = c.Enrollments.Count
             })
             .ToListAsync(ct);
@@ -94,6 +95,7 @@ public async Task<IActionResult> GetCourseById(
             c.Code,
             c.Title,
             c.MaxCapacity,
+              c.InstructorId,
             EnrollmentCount = c.Enrollments.Count
         })
         .FirstOrDefaultAsync(ct);
@@ -261,10 +263,10 @@ public async Task<IActionResult> GetCourseById(
         return NoContent();
     }
    [Authorize(Roles = "Admin")]
-[HttpPost]
-[ProducesResponseType(
-    typeof(CourseResponseDto),
-    StatusCodes.Status201Created)] 
+// [HttpPost]
+// [ProducesResponseType(
+//     typeof(CourseResponseDto),
+//     StatusCodes.Status201Created)] 
 [HttpPost]
 [ProducesResponseType(
     typeof(CourseResponseDto),

@@ -37,7 +37,8 @@ using System.Text;
 using Tms.Api.Authorization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -163,15 +164,17 @@ builder.Services.AddOpenApi("v1", options =>
 {
     options.ShouldInclude = description =>
         description.GroupName == "v1";
-});
 
+
+});
 
 builder.Services.AddOpenApi("v2", options =>
 {
     options.ShouldInclude = description =>
         description.GroupName == "v2";
-});
 
+   
+});
 
 // =============================
 // CORS FOR ANGULAR
@@ -235,11 +238,6 @@ builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
     typeof(ValidationBehavior<,>));
 
-
-// =============================
-// APPLICATION SERVICES
-// =============================
-
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 
 builder.Services.AddScoped<ICourseService, CourseService>();
@@ -251,10 +249,6 @@ builder.Services.AddSingleton<
     ITranscriptNotificationService,
     SignalRTranscriptNotificationService>();
 
-
-// =============================
-// HYBRID CACHE
-// =============================
 
 builder.Services.AddHybridCache(options =>
 {
@@ -268,11 +262,6 @@ builder.Services.AddHybridCache(options =>
         };
 });
 
-
-// =============================
-// RATE LIMITING
-// =============================
-
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("AuthLimiter", opt =>
@@ -282,64 +271,6 @@ builder.Services.AddRateLimiter(options =>
     opt.QueueLimit = 0;
 });
 
-    // options.GlobalLimiter =
-    //     PartitionedRateLimiter.Create<HttpContext, string>(
-    //         httpContext =>
-    //         {
-
-    //             var (partitionKey, tier) =
-    //                 ApiKeyResolver.Resolve(httpContext);
-
-
-    //             return tier switch
-    //             {
-
-    //                 ApiKeyTier.Paid =>
-
-    //                 RateLimitPartition.GetTokenBucketLimiter(
-    //                     $"paid:{partitionKey}",
-    //                     _ => new TokenBucketRateLimiterOptions
-    //                     {
-    //                         TokenLimit = 200,
-    //                         TokensPerPeriod = 100,
-    //                         ReplenishmentPeriod =
-    //                             TimeSpan.FromSeconds(10),
-    //                         QueueLimit = 0,
-    //                         AutoReplenishment = true
-    //                     }),
-
-
-    //                 ApiKeyTier.Free =>
-
-    //                 RateLimitPartition.GetTokenBucketLimiter(
-    //                     $"free:{partitionKey}",
-    //                     _ => new TokenBucketRateLimiterOptions
-    //                     {
-    //                         TokenLimit = 30,
-    //                         TokensPerPeriod = 10,
-    //                         ReplenishmentPeriod =
-    //                             TimeSpan.FromSeconds(10),
-    //                         QueueLimit = 0,
-    //                         AutoReplenishment = true
-    //                     }),
-
-
-    //                 _ =>
-
-    //                 RateLimitPartition.GetTokenBucketLimiter(
-    //                     $"anon:{partitionKey}",
-    //                     _ => new TokenBucketRateLimiterOptions
-    //                     {
-    //                         TokenLimit = 10,
-    //                         TokensPerPeriod = 5,
-    //                         ReplenishmentPeriod =
-    //                             TimeSpan.FromSeconds(10),
-    //                         QueueLimit = 0,
-    //                         AutoReplenishment = true
-    //                     })
-
-    //             };
-    //         });
 options.GlobalLimiter =
     PartitionedRateLimiter.Create<HttpContext, string>(
         httpContext =>
@@ -481,19 +412,12 @@ options.GlobalLimiter =
 });
 
 
-// =============================
-// EXCEPTION HANDLING
-// =============================
-
 builder.Services.AddExceptionHandler
     <GlobalExceptionHandler>();
 
 builder.Services.AddProblemDetails();
 
 
-// =============================
-// BACKGROUND SERVICES
-// =============================
 
 builder.Services.AddSingleton<EnrollmentWorker>();
 builder.Services.AddHostedService<TranscriptWorker>();
@@ -688,28 +612,28 @@ if(app.Environment.IsDevelopment())
         "/openapi/{documentName}.json");
 
 
-    app.MapScalarApiReference(options =>
-    {
-        options
-            .WithTitle("TMS API Reference")
+   app.MapScalarApiReference(options =>
+{
+    options
+        .WithTitle("TMS API Reference")
 
-            .WithTheme(
-                ScalarTheme.DeepSpace)
+        .WithTheme(
+            ScalarTheme.DeepSpace)
 
-            .WithDefaultHttpClient(
-                ScalarTarget.CSharp,
-                ScalarClient.HttpClient)
+        .WithDefaultHttpClient(
+            ScalarTarget.CSharp,
+            ScalarClient.HttpClient)
 
-            .AddDocument(
-                "v1",
-                "API Version 1.0")
+        .AddDocument(
+            "v1",
+            "API Version 1.0")
 
-            .AddDocument(
-                "v2",
-                "API Version 2.0");
+        .AddDocument(
+            "v2",
+            "API Version 2.0")
 
-    });
-
+        .AddPreferredSecuritySchemes("Bearer");
+});
 }
 
 
@@ -779,8 +703,15 @@ if(app.Environment.IsDevelopment())
         .GetRequiredService<TmsDbContext>();
 
 
-    await DataSeeder.SeedAsync(context);
+    // await DataSeeder.SeedAsync(context);
+    
 
 }
 
+
+
 app.Run();
+public partial class Program
+{
+}
+

@@ -16,6 +16,7 @@ namespace TmsApi.Infrastructure.Persistence;public class TmsDbContext : Identity
 public DbSet<Student> Students => Set<Student>();
 public DbSet<Course> Courses => Set<Course>();
 public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+
 public DbSet<Assessment> Assessments => Set<Assessment>();
 public DbSet<Certificate> Certificates => Set<Certificate>();
 public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -29,6 +30,8 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
         .WithMany(u => u.Courses)
         .HasForeignKey(c => c.InstructorId)
         .OnDelete(DeleteBehavior.SetNull);
+
+
 
     modelBuilder.ApplyConfigurationsFromAssembly(
         typeof(TmsDbContext).Assembly

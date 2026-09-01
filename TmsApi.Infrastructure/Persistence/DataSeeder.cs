@@ -38,7 +38,11 @@ public static class DataSeeder
         CancellationToken ct = default)
     {
         // Habit 1: MigrateAsync first
+        // await context.Database.MigrateAsync(ct);
+        if (context.Database.IsRelational())
+    {
         await context.Database.MigrateAsync(ct);
+    }
 
         // Habit 2: Idempotency guard
         if (await context.Courses.AnyAsync(ct))
