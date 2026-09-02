@@ -28,11 +28,6 @@ public class CoursesController : ControllerBase
         _mediator = mediator;
     }
 
-    // ============================================================
-    // GET /api/v1/courses
-    // Existing endpoint
-    // ============================================================
-
     [HttpGet]
     public async Task<IActionResult> GetCourses(
         [FromQuery] int page = 1,
@@ -113,10 +108,6 @@ public async Task<IActionResult> GetCourseById(
     return Ok(course);
 }
 
-    // PUT /api/v1/courses/{id}
-    //
-    // Module 11 Session 3
-    // Exercise 5 - Resource-Based Authorization
     [Authorize(Roles = "Instructor,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateCourse(
@@ -124,10 +115,6 @@ public async Task<IActionResult> GetCourseById(
         [FromBody] UpdateCourseCommand command,
         CancellationToken ct)
     {
-        // --------------------------------------------------------
-        // Step 1: Find the existing course
-        // --------------------------------------------------------
-
         var course = await _context.Courses
             .FirstOrDefaultAsync(
                 c => c.Id == id,
@@ -145,8 +132,6 @@ public async Task<IActionResult> GetCourseById(
             });
         }
 
-
-        
         var authResult =
             await _authorizationService.AuthorizeAsync(
                 User,
@@ -157,11 +142,6 @@ public async Task<IActionResult> GetCourseById(
         {
             return Forbid();
         }
-
-
-        // --------------------------------------------------------
-        // Step 3: Make sure URL ID and command ID match
-        // --------------------------------------------------------
 
         if (command.Id != id)
         {
@@ -176,15 +156,6 @@ public async Task<IActionResult> GetCourseById(
             });
         }
 
-
-        // --------------------------------------------------------
-        // Step 4: Send command through MediatR
-        //
-        // UpdateCourseHandler will:
-        //
-        // 1. Call ICourseService.UpdateAsync()
-        // 2. Invalidate course cache
-        // --------------------------------------------------------
 
         var result =
             await _mediator.Send(
@@ -202,20 +173,9 @@ public async Task<IActionResult> GetCourseById(
             });
         }
 
-
-        // --------------------------------------------------------
-        // Step 5: Successful update
-        // --------------------------------------------------------
-
         return NoContent();
     }
 
-
-    // ============================================================
-    // DELETE /api/v1/courses/{id}
-    //
-    // Existing endpoint
-    // ============================================================
 [Authorize(Roles = "Instructor,Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteCourse(
@@ -263,10 +223,7 @@ public async Task<IActionResult> GetCourseById(
         return NoContent();
     }
    [Authorize(Roles = "Admin")]
-// [HttpPost]
-// [ProducesResponseType(
-//     typeof(CourseResponseDto),
-//     StatusCodes.Status201Created)] 
+
 [HttpPost]
 [ProducesResponseType(
     typeof(CourseResponseDto),

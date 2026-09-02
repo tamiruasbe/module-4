@@ -19,22 +19,12 @@ public class CourseInstructorHandler
         // Check roles
         var isAdmin = context.User.IsInRole("Admin");
         var isInstructor = context.User.IsInRole("Instructor");
-
-        // ==========================================
-        // ADMIN
-        // ==========================================
-
         // Admin can edit ANY course.
         if (isAdmin)
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
-
-        // ==========================================
-        // INSTRUCTOR
-        // ==========================================
-
         // Instructor can edit only their own course.
         if (isInstructor &&
             resource.InstructorId == userId)

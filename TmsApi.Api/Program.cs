@@ -42,48 +42,8 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// =============================
-// AUTHENTICATION
-// =============================
-
-// builder.Services.AddAuthentication("Training")
-//     .AddScheme<AuthenticationSchemeOptions, TrainingAuthHandler>(
-//         "Training",
-//         null);
-
-// builder.Services.AddAuthorization();
-
-// JWT AUTHENTICATION 
-
 builder.Services.AddScoped<TokenService>();
 
-
-// .AddJwtBearer(options =>
-// {
-//     options.TokenValidationParameters =
-//         new TokenValidationParameters
-//         {
-//             ValidateIssuer = true,
-//             ValidateAudience = true,
-//             ValidateLifetime = true,
-//             ValidateIssuerSigningKey = true,
-
-//             ValidIssuer =
-//                 builder.Configuration["Jwt:Issuer"],
-
-//             ValidAudience =
-//                 builder.Configuration["Jwt:Audience"],
-
-//             IssuerSigningKey =
-//                 new SymmetricSecurityKey(
-//                     Encoding.UTF8.GetBytes(
-//                         builder.Configuration["Jwt:Key"]!
-//                     )
-//                 )
-//                 // RoleClaimType = ClaimTypes.Role 
-//         };
-// });
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme =
@@ -135,30 +95,16 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-XSRF-TOKEN";
 });
 
-
-// =============================
-// DATABASE
-// =============================
-
 builder.Services.AddDbContext<TmsDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("TmsDatabase"))
     .LogTo(Console.WriteLine, LogLevel.Information));
-
-
-// =============================
-// CONTROLLERS
-// =============================
 
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<AuditLogFilter>();
 });
 builder.Services.AddSignalR();
-
-// =============================
-// OPEN API / SCALAR
-// =============================
 
 builder.Services.AddOpenApi("v1", options =>
 {
@@ -175,26 +121,6 @@ builder.Services.AddOpenApi("v2", options =>
 
    
 });
-
-// =============================
-// CORS FOR ANGULAR
-// =============================
-
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy("AllowAngular", policy =>
-//     {
-//         policy
-//             .WithOrigins("http://localhost:4200")
-//             .AllowAnyHeader()
-//             .AllowAnyMethod();
-//     });
-// });
-
-
-// =============================
-// MEDIATR
-// =============================
 
 builder.Services.AddMediatR(cfg =>
 {
@@ -216,18 +142,8 @@ builder.Services.AddMediatR(cfg =>
         typeof(CreateCourseHandler).Assembly);
 });
 
-
-// =============================
-// FLUENT VALIDATION
-// =============================
-
 builder.Services.AddValidatorsFromAssembly(
     typeof(EnrollStudentValidator).Assembly);
-
-
-// =============================
-// PIPELINE BEHAVIORS
-// =============================
 
 builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
@@ -428,21 +344,11 @@ builder.Services.AddSingleton(
             FullMode = BoundedChannelFullMode.Wait
         }));
 
-
-// =============================
-// VALIDATION
-// =============================
-
 builder.Host.UseDefaultServiceProvider(options =>
 {
     options.ValidateScopes = true;
     options.ValidateOnBuild = true;
 });
-
-
-// =============================
-// API VERSIONING
-// =============================
 
 builder.Services.AddApiVersioning(options =>
 {
@@ -501,10 +407,6 @@ builder.Services.AddCors(options =>
 builder.Services
     .AddIdentityCore<TmsUser>(options =>
     {
-        // =====================================
-        // ENTERPRISE PASSWORD POLICY
-        // =====================================
-
         options.Password.RequiredLength = 12;
 
         options.Password.RequireUppercase = true;
@@ -512,11 +414,6 @@ builder.Services
         options.Password.RequireDigit = true;
 
         options.Password.RequireNonAlphanumeric = true;
-
-
-        // =====================================
-        // BRUTE-FORCE LOCKOUT PROTECTION
-        // =====================================
 
         options.Lockout.MaxFailedAccessAttempts = 5;
 
@@ -527,38 +424,8 @@ builder.Services
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<TmsDbContext>();
-// =============================
-// BUILD APP
-// =============================
-
 var app = builder.Build();
 
-
-// SECURITY RESPONSE HEADERS
-// =============================
-
-// app.Use(async (context, next) =>
-// {
-//     context.Response.Headers.Append(
-//         "X-Content-Type-Options",
-//         "nosniff");
-
-//     context.Response.Headers.Append(
-//         "X-Frame-Options",
-//         "DENY");
-
-//     context.Response.Headers.Append(
-//         "Referrer-Policy",
-//         "strict-origin-when-cross-origin");
-
-//     context.Response.Headers.Append(
-//         "Content-Security-Policy",
-//         "default-src 'self'; " +
-//         "script-src 'self'; " +
-//         "style-src 'self' 'unsafe-inline';");
-
-//     await next();
-// });
 app.Use(async (context, next) =>
 {
     context.Response.Headers.Append(
@@ -593,11 +460,6 @@ app.Use(async (context, next) =>
 
     await next();
 });
-
-// =============================
-// MIDDLEWARE PIPELINE
-// =============================
-
 
 app.UseExceptionHandler();
 
@@ -636,28 +498,13 @@ if(app.Environment.IsDevelopment())
 });
 }
 
-
-
 app.UseMiddleware<RequestLoggingMiddleware>();
-
-
 app.UseHttpsRedirection();
-
-
 app.UseRouting();
 app.UseCors("TmsClient");
 
-// IMPORTANT FOR ANGULAR
-// app.UseCors("AllowAngular");
-
-
-
 app.UseRateLimiter();
-
-
 app.UseAuthentication();
-
-
 app.UseAuthorization();
 app.Use(async (context, next) =>
 {
@@ -675,40 +522,21 @@ Secure = !builder.Environment.IsDevelopment(),SameSite = SameSiteMode.Strict
 }
 await next(context);
 });
-
-
 app.UseMiddleware<V1DeprecationMiddleware>();
-
-
-
 app.MapControllers();
 
 // app.MapHub<TmsHub>("/hubs/tms");
 app.MapHub<TmsHub>("/hubs/tms")
    .RequireCors("TmsClient");
 
-// =============================
-// DATABASE SEED
-// =============================
-
 if(app.Environment.IsDevelopment())
 {
-
     using var scope =
         app.Services.CreateScope();
-
-
     var context =
         scope.ServiceProvider
         .GetRequiredService<TmsDbContext>();
-
-
-    // await DataSeeder.SeedAsync(context);
-    
-
 }
-
-
 
 app.Run();
 public partial class Program

@@ -53,43 +53,6 @@ public async Task<IActionResult> GetStudent(int id)
 
     return Ok(student);
 }
-// [HttpPut("{id}")]
-// public async Task<IActionResult> UpdateStudent(
-//     int id,
-//     UpdateStudentDto dto)
-// {
-//     var student = await context.Students
-//         .FirstOrDefaultAsync(s => s.Id == id);
-
-
-//     if(student == null)
-//         return NotFound();
-
-
-//     student.Name = dto.Name;
-//     student.GPA = dto.GPA;
-
-
-//     // Important for concurrency checking
-//     context.Entry(student)
-//         .Property(s => s.Version)
-//         .OriginalValue = dto.Version;
-
-
-//     try
-//     {
-//         await context.SaveChangesAsync();
-//     }
-//     catch(DbUpdateConcurrencyException)
-//     {
-//         return Conflict(
-//             "Student was modified by another user"
-//         );
-//     }
-
-
-//     return Ok(student);
-// }
 [HttpPut("{id}")]
 public async Task<IActionResult> UpdateStudent(
     int id,
@@ -97,18 +60,10 @@ public async Task<IActionResult> UpdateStudent(
 {
     var student = await context.Students
         .FirstOrDefaultAsync(s => s.Id == id);
-    // var student = await context.Students
-    // .IgnoreQueryFilters()
-    // .FirstOrDefaultAsync(s => s.Id == id);
-
-
     if(student == null)
         return NotFound();
-
-
     student.Name = dto.Name;
     student.GPA = dto.GPA;
-
 
     try
     {
@@ -131,7 +86,6 @@ public async Task<IActionResult> UpdateStudent(
         });
     }
 
-
     return Ok(student);
 }
 
@@ -146,9 +100,7 @@ public async Task<IActionResult> CreateStudent(CreateStudentDto dto)
         IsActive = dto.IsActive
     };
 
-
     context.Students.Add(student);
-
 
     try
     {
@@ -192,14 +144,8 @@ public async Task<IActionResult> DeleteStudent(int id)
     {
         return NotFound();
     }
-
-
     student.IsDeleted = true;
-
-
     await context.SaveChangesAsync();
-
-
     return NoContent();
 }
 
@@ -219,10 +165,6 @@ public async Task<IActionResult> GetTopCourses()
 
     return Ok(courses);
 }
-
-
-
-
 
 // 1. Normal Query: Hides soft-deleted records automatically
     [HttpGet("normal-list")]

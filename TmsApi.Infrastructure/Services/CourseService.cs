@@ -57,9 +57,6 @@ public class CourseService(
             .AsNoTracking()
             .AnyAsync(c => c.Code == code, ct);
 
-    // ===========================
-    // NEW METHOD FOR EXERCISE 4
-    // ===========================
 
     public async Task<PagedResponse<CourseResponseDto>> GetCoursesAsync(
         PagedRequest request,

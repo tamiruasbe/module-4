@@ -17,9 +17,7 @@ public class CoursesController(
     ICourseService courseService,
     LinkGenerator linkGenerator) : ControllerBase
 {
-    // ════════════════════════════════════════
-    // GET /api/courses
-    // ════════════════════════════════════════
+
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<CourseResponseDto>), StatusCodes.Status200OK)]
     [EndpointSummary("List courses with pagination")]
@@ -37,9 +35,7 @@ public class CoursesController(
     return Ok(result);
 }
 
-    // ════════════════════════════════════════
-    // GET /api/courses/{id}
-    // ════════════════════════════════════════
+  
     [HttpGet("{id:int}", Name = nameof(GetCourseById))]
     [ProducesResponseType(typeof(CourseDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -96,9 +92,7 @@ public class CoursesController(
         return Ok(detailDto);
     }
 
-    // ════════════════════════════════════════
-    // POST /api/courses
-    // ════════════════════════════════════════
+   
     [HttpPost]
     [ProducesResponseType(typeof(CourseResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -131,9 +125,7 @@ public class CoursesController(
             result);
     }
 
-    // ════════════════════════════════════════
-// GET /api/courses/search
-// ════════════════════════════════════════
+
 [HttpGet("search")]
 [EnableRateLimiting("search")]
 [EndpointSummary("Search courses")]
@@ -147,9 +139,7 @@ public async Task<IActionResult> SearchCourses(
 
     return Ok(results);
 }
-// ════════════════════════════════════════
-// DELETE /api/courses/{id}
-// ════════════════════════════════════════
+
 [HttpDelete("{id:int}")]
 [ProducesResponseType(StatusCodes.Status204NoContent)]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -171,8 +161,7 @@ public async Task<IActionResult> DeleteCourse(
         });
     }
 
-    // IMPORTANT:
-    // If students are enrolled, reject deletion.
+   
     if (course.EnrollmentCount > 0)
     {
         return Conflict(new ProblemDetails
