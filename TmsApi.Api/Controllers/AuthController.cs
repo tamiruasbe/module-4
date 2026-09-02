@@ -154,6 +154,13 @@ public class AuthController : ControllerBase
         var accessToken =
             _tokenService.GenerateJwt(user, roles);
 
+            Response.Cookies.Append("tms_auth", accessToken,
+             new CookieOptions { HttpOnly = true, 
+             Secure = !HttpContext.RequestServices 
+             .GetRequiredService<IWebHostEnvironment>()
+              .IsDevelopment(), SameSite = SameSiteMode.Strict,
+             Expires = DateTimeOffset.UtcNow.AddHours(2) });
+
         var refreshToken = new RefreshToken
         {
             Token = Guid.NewGuid().ToString("N"),
@@ -244,6 +251,12 @@ public class AuthController : ControllerBase
 
         var newAccessToken =
             _tokenService.GenerateJwt(user!, roles);
+
+            Response.Cookies.Append("tms_auth", newAccessToken, 
+            new CookieOptions { HttpOnly = true, Secure = !HttpContext.RequestServices 
+            .GetRequiredService<IWebHostEnvironment>() .IsDevelopment(), 
+            SameSite = SameSiteMode.Strict, 
+            Expires = DateTimeOffset.UtcNow.AddHours(2) });
 
         return Ok(new
         {
